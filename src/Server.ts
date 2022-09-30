@@ -20,7 +20,7 @@ export interface Handle {
 export class Server extends EventTarget {
   #port: number;
   #path: string;
-  #server: Deno.Listener | undefined;
+  #abort: AbortController | undefined;
   #handles = new Map<string, Handle>();
 
   /**
@@ -29,7 +29,7 @@ export class Server extends EventTarget {
    */
   constructor(props: ServerProps = {}) {
     super();
-    this.#port = props.port ?? 4455;
+    this.#port = props.port ?? 9000;
     this.#path = props.path ?? '/';
   }
 
@@ -63,24 +63,8 @@ export class Server extends EventTarget {
       handle.client.disconnect();
     }
     await new Promise((resolve) => setTimeout(resolve, 500));
-    if (this.#server) {
-      this.#server.close();
-    }
-  }
-
-  /**
-   * Start the server and listen for connections
-   */
-  async listen(): Promise<void> {
-    if (this.#server) {
-      throw new Error('Server is already listening!');
-    }
-    console.log('Server listening on port:', this.port);
-    this.#server = Deno.listen({port: this.port});
-    for await (const conn of this.#server) {
-      this.#handleConn(conn).catch((err) => {
-        console.log(`Server error: ${err}`);
-      });
+    if (this.#abort && !this.#abort.signal.aborted) {
+      this.#abort.abort();
     }
   }
 
@@ -98,29 +82,34 @@ export class Server extends EventTarget {
   }
 
   /**
-   * Handle a new connection and upgrade WebSocket
+   * Start the server and listen for connections
    */
-  async #handleConn(conn: Deno.Conn): Promise<void> {
-    // deno-lint-ignore no-explicit-any
-    const onError = (err: any) => {
-      console.log(`Server respond error: ${err}`);
-    };
-    const httpConn = Deno.serveHttp(conn);
-    for await (const {request, respondWith} of httpConn) {
-      const url = new URL(request.url);
-      if (new RegExp(`^${this.path}/?$`).test(url.pathname)) {
-        const {socket, response} = Deno.upgradeWebSocket(request);
-        this.#handleSocket(socket);
-        respondWith(response).catch(onError);
-        continue;
-      }
-      respondWith(
-        new Response(null, {
+  listen(): void {
+    if (this.#abort) {
+      throw new Error('Server is already listening!');
+    }
+    this.#abort = new AbortController();
+    Deno.serve(
+      {
+        signal: this.#abort.signal,
+        port: this.port,
+        onListen({port, hostname}: {port: number; hostname: string}) {
+          console.log(`Listening on http://${hostname}:${port}`);
+        }
+      },
+      (request: Request) => {
+        const url = new URL(request.url);
+        if (new RegExp(`^${this.path}/?$`).test(url.pathname)) {
+          const {socket, response} = Deno.upgradeWebSocket(request);
+          this.#handleSocket(socket);
+          return response;
+        }
+        return new Response(null, {
           status: 404,
           statusText: '403 Forbidden'
-        })
-      ).catch(onError);
-    }
+        });
+      }
+    );
   }
 
   /**
