@@ -93,7 +93,11 @@ export class Sporket extends Socket {
     const payload = parseMessage(message);
     // First message should always be authentication
     if (message.type === MessageType.AUTH && 'uuid' in payload) {
-      this.#authenticate(message);
+      try {
+        await this.#authenticate(message);
+      } catch {
+        this.disconnect();
+      }
       return;
     }
     // Subsequent message signatures must be verified
