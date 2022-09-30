@@ -1,8 +1,5 @@
 import * as base64 from 'https://deno.land/std@0.158.0/encoding/base64.ts';
 import {
-  signMessage,
-  verifyMessage,
-  parseMessage,
   Socket,
   SporketProps,
   Message,
@@ -10,6 +7,12 @@ import {
   MessageStatus,
   MessageData
 } from '../mod.ts';
+import {
+  parseMessage,
+  createMessage,
+  signMessage,
+  verifyMessage
+} from './message.ts';
 
 /**
  * A client of the Sporket server
@@ -56,14 +59,7 @@ export class Sporket extends Socket {
     if (type !== MessageType.AUTH && !this.isAuthenticated) {
       return false;
     }
-    let message: Message = {
-      id: crypto.randomUUID(),
-      now: Date.now(),
-      type,
-      status,
-      payload: base64.encode(JSON.stringify(payload)),
-      signature: ''
-    };
+    let message = createMessage(payload, type, status);
     message = await signMessage(message, this.#cryptoKey!);
     this.socket.send(JSON.stringify(message));
     return true;
