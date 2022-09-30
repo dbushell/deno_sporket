@@ -5,4 +5,5 @@
 !mod.ts
 !src/
 src/*
+!src/imports.json
 !src/*.ts

@@ -1,6 +1,6 @@
 # Deno Sporket
 
-🦕 [experimental] Deno library for WebSocket Server / Client (with auth and signatures)
+🦕 Deno library for WebSocket Server / Client (with auth and signatures) (experimental).
 
 ## Documentation
 
