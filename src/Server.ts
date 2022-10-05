@@ -104,12 +104,17 @@ export class Server extends EventTarget {
           this.#handleSocket(socket);
           return response;
         }
-        return new Response(null, {
-          status: 404,
-          statusText: '403 Forbidden'
-        });
+        return this.handleRequest(request);
       }
     );
+  }
+
+  // deno-lint-ignore no-unused-vars
+  handleRequest(request: Request): Response {
+    return new Response(null, {
+      status: 404,
+      statusText: 'Not Found'
+    });
   }
 
   /**
