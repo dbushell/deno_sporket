@@ -71,7 +71,6 @@ export class Server extends EventTarget {
   /**
    * Send a data message to all authenticated clients
    * @param {MessageData} payload  - data to send to the server
-   * @returns true if the message was sent
    */
   async send(payload: MessageData): Promise<void> {
     for (const handle of this.#handles.values()) {
@@ -79,6 +78,21 @@ export class Server extends EventTarget {
         await handle.client.send(MessageType.DATA, MessageStatus.OK, payload);
       }
     }
+  }
+
+  /**
+   * Send a data message to a single authenticated client
+   * @param {string} uuid - the client uuid
+   * @param {MessageData} payload  - data to send to the server
+   * @returns true if the message was sent
+   */
+  async sendTo(uuid: string, payload: MessageData): Promise<boolean> {
+    const client = this.#handles.get(uuid)?.client;
+    if (client && client.isAuthenticated) {
+      await client.send(MessageType.DATA, MessageStatus.OK, payload);
+      return true;
+    }
+    return false;
   }
 
   /**
@@ -171,6 +185,11 @@ export class Server extends EventTarget {
     );
     client.removeEventListener('message', handle.onMessage as EventListener);
     this.#handles.delete(client.uuid);
+    this.dispatchEvent(
+      new CustomEvent('clientdisconnect', {
+        detail: {uuid: client.uuid}
+      })
+    );
   }
 
   /**
@@ -178,12 +197,18 @@ export class Server extends EventTarget {
    */
   #handleMessage(ev: CustomEvent<MessageData>): void {
     // Forward verified unwrapped message data to wrapper
-    this.dispatchEvent(new CustomEvent('message', {detail: ev.detail}));
+    const client = ev.target as ServerClient;
+    this.dispatchEvent(
+      new CustomEvent('message', {detail: {...ev.detail, uuid: client.uuid}})
+    );
   }
 
   #handleAuthenticated(ev: CustomEvent): void {
-    // deno-lint-ignore no-unused-vars
     const client = ev.target as ServerClient;
-    // TODO: dispatch event?
+    this.dispatchEvent(
+      new CustomEvent('clientconnect', {
+        detail: {uuid: client.uuid}
+      })
+    );
   }
 }

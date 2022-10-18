@@ -18,8 +18,7 @@ import {
  * A client of the Sporket server
  */
 export class Sporket extends Socket {
-  #uuid!: string;
-  #name: string;
+  #uuid = '';
   #cryptoKey: CryptoKey | null = null;
   #isAuthenticated = false;
 
@@ -29,11 +28,17 @@ export class Sporket extends Socket {
    */
   constructor(props: SporketProps) {
     super(props);
-    this.#name = props.name ?? 'Sporket';
+    const reset = () => {
+      this.#isAuthenticated = false;
+      this.#cryptoKey = null;
+      this.#uuid = '';
+    };
+    this.addEventListener('close', reset);
+    this.addEventListener('disconnect', reset);
   }
 
-  get name(): string {
-    return this.#name;
+  get uuid(): string {
+    return this.#uuid;
   }
 
   /**
@@ -63,19 +68,6 @@ export class Sporket extends Socket {
     message = await signMessage(message, this.#cryptoKey!);
     this.socket.send(JSON.stringify(message));
     return true;
-  }
-
-  // Base socket `open` event handler
-  handleOpen(ev: Event): void {
-    super.handleOpen(ev);
-  }
-
-  // Base socket `close` event handler
-  handleClose(ev: CloseEvent): void {
-    super.handleClose(ev);
-    // Forgot the previous authentication
-    this.#isAuthenticated = false;
-    this.#cryptoKey = null;
   }
 
   /**
@@ -154,6 +146,6 @@ export class Sporket extends Socket {
         new TextEncoder().encode(Deno.env.get('SPORKET_PASSWORD') + this.#uuid)
       )
     );
-    this.send({challenge, name: this.#name}, MessageType.AUTH);
+    this.send({challenge}, MessageType.AUTH);
   }
 }

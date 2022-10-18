@@ -18,7 +18,6 @@ import {
  */
 export class ServerClient extends EventTarget {
   #uuid: string;
-  #name: string;
   #socket: WebSocket;
   #cryptoKey!: CryptoKey;
   #isAuthenticated = false;
@@ -36,7 +35,6 @@ export class ServerClient extends EventTarget {
   constructor({uuid, socket}: ClientProps) {
     super();
     this.#uuid = uuid;
-    this.#name = 'Unknown';
     this.#socket = socket;
     // Create key for signing and verifying messages
     crypto.subtle
@@ -61,10 +59,6 @@ export class ServerClient extends EventTarget {
 
   get uuid(): string {
     return this.#uuid;
-  }
-
-  get name(): string {
-    return this.#name;
   }
 
   get socket(): WebSocket {
@@ -180,9 +174,6 @@ export class ServerClient extends EventTarget {
       );
       if (challenge !== payload.challenge) {
         throw new Error();
-      }
-      if (typeof payload?.name === 'string') {
-        this.#name = payload.name;
       }
       this.#isAuthenticated = true;
       await this.send(MessageType.AUTH, MessageStatus.OK, {

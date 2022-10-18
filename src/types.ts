@@ -17,9 +17,8 @@ export interface SocketProps {
   waitExtend?: number;
 }
 
-export interface SporketProps extends SocketProps {
-  name?: string;
-}
+// deno-lint-ignore no-empty-interface
+export interface SporketProps extends SocketProps {}
 
 export enum MessageType {
   'AUTH' = 'AUTH',
@@ -36,9 +35,11 @@ export enum MessageStatus {
   SERVERERROR = 500
 }
 
-export interface MessageData {
-  [key: string]: MessageData | string | number | boolean | null;
-}
+export type MessageValue = string | number | boolean | null;
+
+export type MessageData = {
+  [key: string]: MessageData | MessageValue[] | MessageValue;
+};
 
 export interface Message {
   id: string;
