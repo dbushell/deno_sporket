@@ -35,7 +35,7 @@ export enum MessageStatus {
   SERVERERROR = 500
 }
 
-export type MessageValue = string | number | boolean | null;
+export type MessageValue = string | number | boolean | null | undefined;
 
 export type MessageData = {
   [key: string]: MessageData | MessageValue[] | MessageValue;
