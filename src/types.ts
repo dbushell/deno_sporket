@@ -1,4 +1,5 @@
 export interface ServerProps {
+  hostname?: string;
   port?: number;
   path?: string;
 }

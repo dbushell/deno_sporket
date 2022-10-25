@@ -18,6 +18,7 @@ export interface Handle {
  * The Sporket server
  */
 export class Server extends EventTarget {
+  #hostname: string;
   #port: number;
   #path: string;
   #abort: AbortController | undefined;
@@ -29,14 +30,19 @@ export class Server extends EventTarget {
    */
   constructor(props: ServerProps = {}) {
     super();
+    this.#hostname = props.hostname ?? 'localhost';
     this.#port = props.port ?? 9000;
     this.#path = props.path ?? '/';
   }
 
   get url() {
-    const url = new URL(this.#path, 'ws://localhost/');
+    const url = new URL(this.#path, `ws://${this.hostname}/`);
     url.port = this.#port.toString();
     return url;
+  }
+
+  get hostname(): string {
+    return this.#hostname;
   }
 
   get port(): number {
@@ -106,6 +112,7 @@ export class Server extends EventTarget {
     Deno.serve(
       {
         signal: this.#abort.signal,
+        hostname: this.hostname,
         port: this.port,
         onListen({port, hostname}: {port: number; hostname: string}) {
           console.log(`Listening on http://${hostname}:${port}`);
