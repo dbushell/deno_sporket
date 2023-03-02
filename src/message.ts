@@ -1,4 +1,4 @@
-import * as base64 from 'https://deno.land/std@0.158.0/encoding/base64.ts';
+import * as base64 from 'https://deno.land/std@0.178.0/encoding/base64.ts';
 import {Message, MessageData, MessageType, MessageStatus} from '../mod.ts';
 
 /**
@@ -70,7 +70,7 @@ export const verifyMessage = async (
   cryptoKey: CryptoKey
 ): Promise<boolean> => {
   if (!(cryptoKey instanceof CryptoKey)) {
-    return Promise.resolve(false);
+    return false;
   }
   try {
     return await crypto.subtle.verify(
@@ -80,6 +80,6 @@ export const verifyMessage = async (
       new TextEncoder().encode(message.id + message.now + message.payload)
     );
   } catch {
-    return Promise.resolve(false);
+    return false;
   }
 };
