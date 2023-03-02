@@ -1,10 +1,10 @@
-import * as base64 from 'https://deno.land/std@0.158.0/encoding/base64.ts';
+import * as base64 from 'https://deno.land/std@0.178.0/encoding/base64.ts';
 import {
   ClientProps,
   Message,
   MessageType,
-  MessageData,
-  MessageStatus
+  MessageStatus,
+  Payload
 } from '../mod.ts';
 import {
   parseMessage,
@@ -19,6 +19,7 @@ import {
 export class ServerClient extends EventTarget {
   #uuid: string;
   #socket: WebSocket;
+  #controller: AbortController;
   #cryptoKey!: CryptoKey;
   #isAuthenticated = false;
 
@@ -36,6 +37,7 @@ export class ServerClient extends EventTarget {
     super();
     this.#uuid = uuid;
     this.#socket = socket;
+    this.#controller = new AbortController();
     // Create key for signing and verifying messages
     crypto.subtle
       .importKey(
@@ -51,10 +53,19 @@ export class ServerClient extends EventTarget {
     this.#onClose = (ev: CloseEvent) => this.#handleClose(ev);
     this.#onError = (ev: Event) => this.#handleError(ev);
     this.#onMessage = (ev: MessageEvent) => this.#handleMessage(ev);
-    this.socket.addEventListener('open', this.#onOpen);
-    this.socket.addEventListener('close', this.#onClose);
-    this.socket.addEventListener('error', this.#onError);
-    this.socket.addEventListener('message', this.#onMessage);
+    const {signal} = this.#controller;
+    this.socket.addEventListener('open', this.#onOpen, {
+      signal
+    });
+    this.socket.addEventListener('close', this.#onClose, {
+      signal
+    });
+    this.socket.addEventListener('error', this.#onError, {
+      signal
+    });
+    this.socket.addEventListener('message', this.#onMessage, {
+      signal
+    });
   }
 
   get uuid(): string {
@@ -83,10 +94,7 @@ export class ServerClient extends EventTarget {
    * Disconnect the WebSocket client and unauthenticate
    */
   disconnect(): void {
-    this.socket.removeEventListener('open', this.#onOpen);
-    this.socket.removeEventListener('close', this.#onClose);
-    this.socket.removeEventListener('error', this.#onError);
-    this.socket.removeEventListener('message', this.#onMessage);
+    this.#controller.abort();
     if (this.isConnected) {
       this.socket.close();
     }
@@ -98,13 +106,13 @@ export class ServerClient extends EventTarget {
    * Send a signed message to the WebSocket client
    * @param {MessageType} type - message type
    * @param {MessageStatus} status - message status
-   * @param {MessageData} payload - message payload
+   * @param {Payload} payload - message payload
    * @returns true if message was sent
    */
   async send(
     type: MessageType,
     status: MessageStatus,
-    payload: MessageData = {}
+    payload: Payload = {}
   ): Promise<boolean> {
     if (!this.isConnected) {
       return false;

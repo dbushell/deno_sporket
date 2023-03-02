@@ -3,7 +3,7 @@ import {
   ServerProps,
   MessageType,
   MessageStatus,
-  MessageData
+  Payload
 } from '../mod.ts';
 
 export interface Handle {
@@ -76,9 +76,9 @@ export class Server extends EventTarget {
 
   /**
    * Send a data message to all authenticated clients
-   * @param {MessageData} payload  - data to send to the server
+   * @param {Payload} payload  - data to send to the server
    */
-  async send(payload: MessageData): Promise<void> {
+  async send(payload: Payload): Promise<void> {
     for (const handle of this.#handles.values()) {
       if (handle.client.isAuthenticated) {
         await handle.client.send(MessageType.DATA, MessageStatus.OK, payload);
@@ -89,10 +89,10 @@ export class Server extends EventTarget {
   /**
    * Send a data message to a single authenticated client
    * @param {string} uuid - the client uuid
-   * @param {MessageData} payload  - data to send to the server
+   * @param {Payload} payload  - data to send to the server
    * @returns true if the message was sent
    */
-  async sendTo(uuid: string, payload: MessageData): Promise<boolean> {
+  async sendTo(uuid: string, payload: Payload): Promise<boolean> {
     const client = this.#handles.get(uuid)?.client;
     if (client && client.isAuthenticated) {
       await client.send(MessageType.DATA, MessageStatus.OK, payload);
@@ -148,7 +148,7 @@ export class Server extends EventTarget {
       client,
       onConnect: (ev: CustomEvent) => this.#handleConnect(ev),
       onDisconnect: (ev: CustomEvent) => this.#handleDisconnect(ev),
-      onMessage: (ev: CustomEvent<MessageData>) => this.#handleMessage(ev),
+      onMessage: (ev: CustomEvent<Payload>) => this.#handleMessage(ev),
       onAuthenticated: (ev: CustomEvent) => this.#handleAuthenticated(ev)
     };
     client.addEventListener('connect', handle.onConnect as EventListener);
@@ -202,7 +202,7 @@ export class Server extends EventTarget {
   /**
    * Handle authenticated client `message` events
    */
-  #handleMessage(ev: CustomEvent<MessageData>): void {
+  #handleMessage(ev: CustomEvent<Payload>): void {
     // Forward verified unwrapped message data to wrapper
     const client = ev.target as ServerClient;
     this.dispatchEvent(

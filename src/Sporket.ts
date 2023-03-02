@@ -1,11 +1,11 @@
-import * as base64 from 'https://deno.land/std@0.158.0/encoding/base64.ts';
+import * as base64 from 'https://deno.land/std@0.178.0/encoding/base64.ts';
 import {
   Socket,
   SporketProps,
   Message,
   MessageType,
   MessageStatus,
-  MessageData
+  Payload
 } from '../mod.ts';
 import {
   parseMessage,
@@ -50,11 +50,11 @@ export class Sporket extends Socket {
 
   /**
    * Send a message to the Sporket server
-   * @param {MessageData} payload  - data to send to the server
+   * @param {Payload} payload  - data to send to the server
    * @returns true if the message was sent
    */
   async send(
-    payload: MessageData,
+    payload: Payload,
     type = MessageType.DATA,
     status = MessageStatus.OK
   ): Promise<boolean> {

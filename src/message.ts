@@ -1,12 +1,12 @@
 import * as base64 from 'https://deno.land/std@0.178.0/encoding/base64.ts';
-import {Message, MessageData, MessageType, MessageStatus} from '../mod.ts';
+import {Message, Payload, MessageType, MessageStatus} from '../mod.ts';
 
 /**
  * Try to parse and return a message payload
  * @param message - data received via websocket
- * @returns {MessageData} parsed payload (or empty object on error)
+ * @returns {Payload} parsed payload (or empty object on error)
  */
-export const parseMessage = (message: Message): MessageData => {
+export const parseMessage = (message: Message): Payload => {
   try {
     const payload = JSON.parse(
       new TextDecoder().decode(base64.decode(message.payload as string))
@@ -19,13 +19,13 @@ export const parseMessage = (message: Message): MessageData => {
 
 /**
  * Return a message object with a blank signature
- * @param {MessageData} payload - message payload
+ * @param {Payload} payload - message payload
  * @param {MessageType} type - message type
  * @param {MessageStatus} status - message status
  * @returns
  */
 export const createMessage = (
-  payload: MessageData,
+  payload: Payload,
   type: MessageType,
   status: MessageStatus
 ): Message => {

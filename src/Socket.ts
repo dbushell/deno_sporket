@@ -1,4 +1,4 @@
-import {SocketProps, MessageData} from './types.ts';
+import {SocketProps, Payload} from './types.ts';
 
 /**
  * Base class to manage a WebSocket connection
@@ -6,6 +6,7 @@ import {SocketProps, MessageData} from './types.ts';
 export class Socket extends EventTarget {
   #url: URL;
   #socket!: WebSocket;
+  #controller!: AbortController;
 
   // Auto-reconnect if WebSocket closes
   #autoConnect: boolean;
@@ -87,10 +88,12 @@ export class Socket extends EventTarget {
       this.disconnect();
     }
     this.#socket = new WebSocket(this.#url.href);
-    this.#socket.addEventListener('open', this.#onOpen);
-    this.#socket.addEventListener('close', this.#onClose);
-    this.#socket.addEventListener('error', this.#onError);
-    this.#socket.addEventListener('message', this.#onMessage);
+    this.#controller = new AbortController();
+    const {signal} = this.#controller;
+    this.#socket.addEventListener('open', this.#onOpen, {signal});
+    this.#socket.addEventListener('close', this.#onClose, {signal});
+    this.#socket.addEventListener('error', this.#onError, {signal});
+    this.#socket.addEventListener('message', this.#onMessage, {signal});
   }
 
   /**
@@ -103,10 +106,7 @@ export class Socket extends EventTarget {
     if (!(this.#socket instanceof WebSocket)) {
       return;
     }
-    this.#socket.removeEventListener('open', this.#onOpen);
-    this.#socket.removeEventListener('close', this.#onClose);
-    this.#socket.removeEventListener('error', this.#onError);
-    this.#socket.removeEventListener('message', this.#onMessage);
+    this.#controller.abort();
     if (this.#socket.readyState < WebSocket.CLOSING) {
       this.#socket.close();
     }
@@ -115,9 +115,9 @@ export class Socket extends EventTarget {
 
   /**
    * Send JSON via the WebSocket
-   * @param {MessageData} data - data to send
+   * @param {Payload} data - data to send
    */
-  sendJSON(data: MessageData) {
+  sendJSON(data: Payload) {
     if (this.isConnected) {
       this.#socket.send(JSON.stringify(data));
     }

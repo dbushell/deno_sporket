@@ -36,17 +36,23 @@ export enum MessageStatus {
   SERVERERROR = 500
 }
 
-export type MessageValue = string | number | boolean | null | undefined;
+export type PayloadType =
+  | null
+  | string
+  | number
+  | boolean
+  | Array<PayloadType>
+  | {[key: string]: PayloadType};
 
-export type MessageData = {
-  [key: string]: MessageData | MessageValue[] | MessageValue;
-};
+export interface Payload {
+  [key: string]: PayloadType;
+}
 
 export interface Message {
   id: string;
   now: number;
   type: MessageType;
   status: MessageStatus;
-  payload: string | MessageData;
+  payload: string | Payload;
   signature: string;
 }
