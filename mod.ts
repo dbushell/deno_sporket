@@ -9,5 +9,6 @@ export type {
   SocketProps,
   SporketProps,
   Message,
-  Payload
+  Payload,
+  PayloadType
 } from './src/types.ts';
